@@ -1,6 +1,8 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <immintrin.h>
 #include <omp.h>
+#include <math.h>
 #include "computepi.h"
 
 double compute_pi_baseline(size_t N)
@@ -12,6 +14,46 @@ double compute_pi_baseline(size_t N)
         pi += dt / (1.0 + x * x);       // integrate 1/(1+x^2), i = 0....N
     }
     return pi * 4.0;
+}
+
+double compute_pi_leibniz_baseline(size_t N)
+{
+    double pi = 0.0;
+    for (size_t i = 0; i < N; i++)
+    {
+        pi += pow(-1.0,i) / (2*i + 1);
+    }
+    return pi;
+}
+
+double compute_pi_eular_baseline(size_t N)
+{
+    double pi = 0.0;
+    for (size_t i = 1; i < N; i++)
+    {
+        pi += 1 / pow(i,2);
+    }
+    return pi;
+}
+
+double compute_pi_toss(size_t N)
+{
+    size_t sum;
+    double x,y,z;
+    
+    #pragma omp parallel num_threads(2)
+    {
+        #pragma omp for private (x,y,z) reduction(+:sum)
+        for(size_t i = 0; i < N; i++)
+        {
+            x = (double)rand()/RAND_MAX;
+            y = (double)rand()/RAND_MAX;
+            z = x*x+y*y;
+
+            if (z<=1) sum++;
+        }
+    }
+    return sum/(double)N * 4.0;
 }
 
 double compute_pi_openmp(size_t N, int threads)
